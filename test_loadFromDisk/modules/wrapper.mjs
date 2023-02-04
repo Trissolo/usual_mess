@@ -1,3 +1,9 @@
 import TestCore from "./testcore/testcore.mjs";
 
-console.log(TestCore.currFile);
+// console.log("currFile", TestCore.currFile);
+
+// console.log("allThings",TestCore.allThings, TestCore.allThings.length);
+
+// console.log("thing", TestCore.thing);
+
+// TestCore.prevFile();
