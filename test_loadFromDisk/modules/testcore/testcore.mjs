@@ -1,6 +1,8 @@
 export default class TestCore
 {
-  static fileArray = [{name:"A", things:[1,2,3]}, {name:"B", things:[4,5,6]}, {name:"C", things:[7,8,9]}];
+  //placeholder
+  
+  static fileArray = [{name:"A", things:[..."ABC"]}, {name:"B", things:[..."DEFG"]}, {name:"C", things:[..."HIJKL"]}];
   
   static findex = 0;
 
@@ -16,6 +18,11 @@ export default class TestCore
     return this.currFile.things[this.thingIndex];
   }
 
+  static get allThings()
+  {
+    return this.currFile.things
+  }
+
   static nextFile()
   {
     this.findex = (this.findex + 1) % this.fileArray.length;
@@ -29,4 +36,15 @@ export default class TestCore
     
     this.thingIndex = 0;
   }
+
+  static nextThing()
+  {
+    this.thingIndex = (this.thingIndex + 1) % this.allThings.length
+  }
+
+  static prevThing()
+  {
+    this.thingIndex = (this.thingIndex + this.allThings.length - 1) % this.allThings.length
+  }
+
 }
