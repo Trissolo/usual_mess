@@ -85,7 +85,7 @@ def visible_vectors_to_json(image, layer, room_id, sub_id, glob_container = [], 
     #return
 
 register(
-    "python_fu_polygons_coords_to_json",                           
+    "mio_gimp_fu_paths_to_json",                           
     "Generate a JSON containing the coordinates of the points of each visible path.",
     "Generate a JSON containing the coordinates of the points of each visible path.",
     "Trissolo",
