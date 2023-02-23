@@ -31,38 +31,36 @@ from gimpfu import *
 
 import json
 
-def pre_test(vectors, marker):
-    for idx, vector in enumerate(vectors):
-        if vector.name.startswith(marker) and vector.visible:
-            return True
-    
-    return False
-
-
-def showMessage(string):
-    return pdb.gimp_message("\n" + string)
-   
-def bezier_points_to_string(vector):
-    x_and_y_values = []
-    bezier_list = vector.strokes[0].points[0]
-    
-    for i in range(0, len(bezier_list), 6):
-        x_and_y_values.append(int(bezier_list[i]))
-        x_and_y_values.append(int(bezier_list[i + 1]))
-    
-    return ' '.join(map(str, x_and_y_values))
-
-
-def add_record(container, room, sub):
-    container.append({"coords": [], "room": room, "sub": sub})
-
-
 def visible_vectors_to_json(image, layer, room_id, sub_id, glob_container = [], walkable_area_marker = "_"):
     pdb.gimp_image_undo_group_start(image)
     pdb.gimp_context_push()
     
-    #pdb.gimp_message("This is sample shell script2.")
     #PUT YOUR CODE HERE
+    def pre_test(vectors, marker):
+        for idx, vector in enumerate(vectors):
+            if vector.name.startswith(marker) and vector.visible:
+                return True
+        
+        return False
+
+
+    def showMessage(string):
+        return pdb.gimp_message("\n" + string)
+    
+    def bezier_points_to_string(vector):
+        x_and_y_values = []
+        bezier_list = vector.strokes[0].points[0]
+        
+        for i in range(0, len(bezier_list), 6):
+            x_and_y_values.append(int(bezier_list[i]))
+            x_and_y_values.append(int(bezier_list[i + 1]))
+        
+        return ' '.join(map(str, x_and_y_values))
+
+
+    def add_record(container, room, sub):
+        container.append({"coords": [], "room": room, "sub": sub})
+
     if pre_test(image.vectors, walkable_area_marker):
         for idx, vector in enumerate(image.vectors):
             if vector.visible:
@@ -78,7 +76,7 @@ def visible_vectors_to_json(image, layer, room_id, sub_id, glob_container = [], 
     else:
         showMessage("Aborted! :(\nAt least one visible path is required, with a name starting with '{}'".format(walkable_area_marker))
 
-    #no more code!
+    #NO MORE CODE!
     pdb.gimp_context_pop()
     pdb.gimp_image_undo_group_end(image)
     pdb.gimp_displays_flush()
@@ -91,7 +89,7 @@ register(
     "Trissolo",
     "Trissolo",
     "2014",
-    "<Image>/Windows/Generate JSON (Paths Points)", # <----= Menu path
+    "<Image>/Windows/Generate JSON (Paths Points)...", # <----= Menu path
     "RGB*, GRAY*", 
     [
     (PF_INT, "room_id", "Current Room", 0),
