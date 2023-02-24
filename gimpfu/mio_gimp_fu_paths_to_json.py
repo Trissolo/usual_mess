@@ -88,8 +88,8 @@ register(
     "Generate a JSON containing the coordinates of the points of each visible path.",
     "Trissolo",
     "Trissolo",
-    "2014",
-    "<Image>/Windows/Generate JSON (Paths Points)...", # <----= Menu path
+    "2023",
+    "<Image>/Windows/TRIS/Generate JSON (Paths Points)...", # <----= Menu path
     "RGB*, GRAY*", 
     [
     (PF_INT, "room_id", "Current Room", 0),
