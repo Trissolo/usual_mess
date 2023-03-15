@@ -19,7 +19,7 @@ export default class RecentTest extends Phaser.Scene
         this.uiMan = new UIhelper(this);
 
         // player stuff as Scene props
-        this.player = this.add.rectangle(60, 120, 8, 28, 0x6666ff).setOrigin(0.5, 1).setAlpha(.5);
+        this.player = this.add.rectangle(60, 120, 8, 28, 0x6666ff).setOrigin(0.5, 1).setAlpha(.5).setDepth(3);
 
         this.playerVelocity = Phaser.Math.GetSpeed(230, 5);
 
@@ -28,6 +28,13 @@ export default class RecentTest extends Phaser.Scene
         this.prevPos = new Phaser.Math.Vector2();
 
         this.candidatePos = new Phaser.Math.Vector2();
+
+        //obstacles
+        this.rectangles = [];
+        this.lines = [];
+
+        this.rectangles.push(new Phaser.Geom.Rectangle(80, 49, 77, 66));
+
 
         this.graphics = this.add.graphics({lineStyle: {color:0xdada56}, fillStyle: {color:0x5689bd}});
 
@@ -76,14 +83,55 @@ export default class RecentTest extends Phaser.Scene
         
         // player.copyPosition(candidatePos);
 
-        this.debugMov(angle);
-        player.copyPosition(this.calcCandidatePosition(angle, delta));
+        this.debugAll(angle);
+
+        
+        // calc pos
+        this.calcCandidatePosition(angle, delta)
+        
+        this.checkRects();
+
+        player.copyPosition(candidatePos);
 
         
         // this.graphics.fillPoint(gag.x, gag.y)
         // console.log(candidatePos);
 
         // player.copyPosition(candidatePos);
+    }
+
+    checkRects(rects = this.rectangles, candidatePos = this.candidatePos, prevPos = this.prevPos)
+    {
+        const rect = rects[0];
+
+        console.log("CH RECTS", rect)
+        const {x:cx, y: cy} = candidatePos;
+
+        if (rect.contains(candidatePos.x, candidatePos.y))
+        {
+            // if (!rect.contains(prevPos.x, candidatePos.y))
+            if(! (rect.x <= prevPos.x && rect.x + rect.width >= prevPos.x))
+            {
+                candidatePos.x = this.prevPos.x;
+            }
+
+            // else if (!rect.contains(candidatePos.x, prevPos.y))
+            else if ( !(rect.y <=prevPos.y && rect.y + rect.height >=prevPos.y))
+            {
+                candidatePos.y = this.prevPos.y;
+            }
+
+
+            // if (cx => rect.x && cx <= rect.x)
+            // {
+            //     candidatePos.x = this.prevPos.x;
+            // }
+
+            // if (cy => rect.bottom && cx <= rect.top)
+            // {
+            //     candidatePos.y = this.prevPos.y;
+            // }
+        }
     }
 
     calcCandidatePosition(angle, delta, velocity = this.playerVelocity, tempVec = this.polarCoords, toVec = this.candidatePos, fromVec = this.player)
@@ -104,6 +152,23 @@ export default class RecentTest extends Phaser.Scene
         debugVec.setToPolar(angle, 14).add(prevPos);
 
         graphics.lineBetween(prevPos.x, prevPos.y, debugVec.x, debugVec.y);
+    }
+
+    debugRects(rects = this.rectangles, graphics = this.graphics)
+    {
+        for (const rect of rects)
+        {
+            graphics.fillRectShape(rect);
+        }
+    }
+
+    debugAll(angle)
+    {
+        this.graphics.clear();
+
+        this.debugRects();
+
+        this.debugMov(angle, false);
     }
 
     isLeft( line, point )
