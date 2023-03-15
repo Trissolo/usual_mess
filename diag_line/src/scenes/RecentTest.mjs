@@ -23,13 +23,15 @@ export default class RecentTest extends Phaser.Scene
 
         this.playerVelocity = Phaser.Math.GetSpeed(230, 5);
 
-        console.log("this.playerVelocity", this.playerVelocity);
+        // console.log("this.playerVelocity", this.playerVelocity);
         
         this.prevPos = new Phaser.Math.Vector2();
 
         this.candidatePos = new Phaser.Math.Vector2();
 
-        this.graphics = this.add.graphics();
+        this.graphics = this.add.graphics({lineStyle: {color:0xdada56}, fillStyle: {color:0x5689bd}});
+
+        this.debugVec = new Phaser.Math.Vector2();
 
         this.debugInfo = this.add.text(2, 2, "0123456789", {fontSize: 12});
     }
@@ -65,17 +67,43 @@ export default class RecentTest extends Phaser.Scene
 
         let angle = predefAngles.get(currentlyPressed.z);
 
-        const vel = playerVelocity * delta;
+        // const vel = playerVelocity * delta;
 
-        polarCoords.setToPolar(angle, vel);
+        // polarCoords.setToPolar(angle, vel);
 
-        candidatePos.copy(polarCoords).add(player);
+        // candidatePos.copy(polarCoords).add(player);
+        // this.calcCandidatePosition()
         
-        player.copyPosition(candidatePos);
+        // player.copyPosition(candidatePos);
 
+        this.debugMov(angle);
+        player.copyPosition(this.calcCandidatePosition(angle, delta));
+
+        
+        // this.graphics.fillPoint(gag.x, gag.y)
         // console.log(candidatePos);
 
         // player.copyPosition(candidatePos);
+    }
+
+    calcCandidatePosition(angle, delta, velocity = this.playerVelocity, tempVec = this.polarCoords, toVec = this.candidatePos, fromVec = this.player)
+    {
+        const vel = velocity * delta;
+
+        tempVec.setToPolar(angle, vel);
+
+        toVec.copy(tempVec).add(fromVec);
+
+        return toVec;
+    }
+
+    debugMov(angle, clear = true, prevPos = this.prevPos, debugVec = this.debugVec, graphics = this.graphics)
+    {
+        if (clear) graphics.clear();
+
+        debugVec.setToPolar(angle, 14).add(prevPos);
+
+        graphics.lineBetween(prevPos.x, prevPos.y, debugVec.x, debugVec.y);
     }
 
     isLeft( line, point )
