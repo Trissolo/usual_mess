@@ -4,9 +4,10 @@ import TestScene from "./scenes/TestScene.mjs";
 import RecentTest from "./scenes/RecentTest.mjs";
 
 const config = {
+  // type: Phaser.WEBGL,
   type: Phaser.CANVAS,
+  // pixelArt: true,
   parent: "gameContainer",
-  //pixelArt: true,
   backgroundColor: '#320822',
   scale:
   {
