@@ -6,6 +6,8 @@ import UIhelper from "../userinput/UIManager.mjs";
 import predefAngles from "../userinput/anglesmap.mjs";
 // const {Line} = Phaser.Geom;
 
+import LineObstacle from "../obstacles/LineObstacle.mjs";
+
 export default class RecentTest extends Phaser.Scene
 {
     constructor()
@@ -23,7 +25,7 @@ export default class RecentTest extends Phaser.Scene
 
         this.playerVelocity = Phaser.Math.GetSpeed(230, 5);
 
-        // console.log("this.playerVelocity", this.playerVelocity);
+        this.movLine = new Phaser.Geom.Line();
         
         this.prevPos = new Phaser.Math.Vector2();
 
@@ -32,6 +34,11 @@ export default class RecentTest extends Phaser.Scene
         //obstacles
         this.rectangles = [];
         this.lines = [];
+
+        //test obs:
+        this.lines.push(new LineObstacle(30,60, 80, 60));
+        this.lines.push(new LineObstacle(84, 10,  84, 90));
+
 
         this.rectangles.push(new Phaser.Geom.Rectangle(80, 49, 77, 66));
 
@@ -89,7 +96,11 @@ export default class RecentTest extends Phaser.Scene
         // calc pos
         this.calcCandidatePosition(angle, delta)
         
-        this.checkRects();
+        //disabled for now...
+        // this.checkRects();
+
+        //lines!
+        this.checkLines();
 
         player.copyPosition(candidatePos);
 
@@ -103,17 +114,21 @@ export default class RecentTest extends Phaser.Scene
     checkRects(rects = this.rectangles, candidatePos = this.candidatePos, prevPos = this.prevPos)
     {
         const rect = rects[0];
-
+        // const blockX = false;
         console.log("CH RECTS", rect)
         const {x:cx, y: cy} = candidatePos;
 
         if (rect.contains(candidatePos.x, candidatePos.y))
         {
+            // if (blockX)
+            // {
+            
             // if (!rect.contains(prevPos.x, candidatePos.y))
             if(! (rect.x <= prevPos.x && rect.x + rect.width >= prevPos.x))
             {
                 candidatePos.x = this.prevPos.x;
             }
+            // }
 
             // else if (!rect.contains(candidatePos.x, prevPos.y))
             else if ( !(rect.y <=prevPos.y && rect.y + rect.height >=prevPos.y))
@@ -162,11 +177,21 @@ export default class RecentTest extends Phaser.Scene
         }
     }
 
+    debugLines(lines = this.lines, graphics = this.graphics)
+    {
+        for (const lineObs of lines)
+        {
+            graphics.strokeLineShape(lineObs.line);
+        }
+    }
+
     debugAll(angle)
     {
         this.graphics.clear();
 
         this.debugRects();
+
+        this.debugLines();
 
         this.debugMov(angle, false);
     }
@@ -175,4 +200,31 @@ export default class RecentTest extends Phaser.Scene
     {
         return line.y1 > line.y2 === ((line.x2 - line.x1) * (point.y - line.y1) - (point.x - line.x1) * (line.y2 - line.y1)) < 0;
     }
+
+    checkLines(lines = this.lines, candidatePos = this.candidatePos, prevPos = this.prevPos, movLine = this.movLine)
+    {
+        // const obs = lines[0];
+
+        movLine.setTo(prevPos.x, prevPos.y, candidatePos.x, candidatePos.y);
+
+        for (const obs of lines)
+        {
+
+            if (Phaser.Geom.Intersects.LineToLine(movLine, obs.line, obs.intersection))
+            {
+                if (obs.isHorizontal)
+                {
+                    return candidatePos.y = prevPos.y;
+                }
+
+                if (obs.isVertical)
+                {
+                    return candidatePos.x = prevPos.x;
+                }
+            }
+
+        }
+    }
+
+
 }
