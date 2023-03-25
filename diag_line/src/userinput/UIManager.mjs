@@ -95,6 +95,22 @@ export default class UIhelper
         return this.currentlyPressed.z >> 3 & 1 === 1;
     }
 
+    bothHorizontalPressed()
+    {
+        // return this.rightPressed() && this.leftPressed();
+        return (this.currentlyPressed.z & 12) === 12;
+    }
+
+    bothVerticalpressed()
+    {
+        return (this.currentlyPressed.z & 3) === 3;
+    }
+
+    forbiddenMov()
+    {
+        return this.currentlyPressed.z === 0 || this.bothHorizontalPressed() || this.bothVerticalpressed();
+    }
+
 } // end UIhelper class
   
 // export {UIhelperConsts, UIhelper, UIDefaultCoords}
