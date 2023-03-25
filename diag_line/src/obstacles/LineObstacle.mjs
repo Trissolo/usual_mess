@@ -32,6 +32,10 @@ export default class LineObstacle
 
         this.angle = Line.Angle(line);
 
+        this.normalX = Line.NormalX(line);
+
+        this.normalY = Line.NormalY(line);
+
     }
 
     pointIsOnLeft(point)
