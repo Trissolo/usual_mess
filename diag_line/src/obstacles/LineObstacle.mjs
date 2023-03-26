@@ -12,6 +12,8 @@ export default class LineObstacle
         this.intersection = new Vector2();
 
         this.setLine(x1, y1, x2, y2);
+
+        this.currentlyChecked = false;
     }
 
     setLine(x1, y1, x2, y2)
