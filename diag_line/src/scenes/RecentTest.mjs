@@ -8,6 +8,8 @@ import predefAngles from "../userinput/anglesmap.mjs";
 
 import LineObstacle from "../obstacles/LineObstacle.mjs";
 
+const {Clamp} = Phaser.Math;
+
 export default class RecentTest extends Phaser.Scene
 {
     constructor()
@@ -21,9 +23,11 @@ export default class RecentTest extends Phaser.Scene
         this.uiMan = new UIhelper(this);
 
         // player stuff as Scene props
-        this.player = this.add.rectangle(60, 120, 8, 28, 0x6666ff).setOrigin(0.5, 1).setAlpha(.5).setDepth(3);
+        this.player = this.add.rectangle(20, 80, 8, 28, 0x6666ff).setOrigin(0.5, 1).setAlpha(.5).setDepth(3);
 
         this.playerVelocity = Phaser.Math.GetSpeed(230, 5);
+
+        this.currentVelocity = 0;
 
         this.movLine = new Phaser.Geom.Line();
         
@@ -31,18 +35,26 @@ export default class RecentTest extends Phaser.Scene
 
         this.candidatePos = new Phaser.Math.Vector2();
 
+        this.tempVec = new Phaser.Math.Vector2();
+
+        //this.polarCoords is set by th UIhelper
+
         //obstacles
         this.rectangles = [];
         this.lines = [];
 
         //test obs:
         //hor line
-        this.lines.push(new LineObstacle(30,60, 80, 60));
+        // this.lines.push(new LineObstacle(30,60, 80, 60));
+
         //ver line
-        this.lines.push(new LineObstacle(84, 10,  84, 90));
+        // this.lines.push(new LineObstacle(83.5, 10,  83.5, 90));
 
         //diag line (slash)
-        this.lines.push(new LineObstacle(30,60,  84, 90));
+
+        //test polygon coords:
+        // [40, 80, 60, 30, 110, 30, 130, 80]
+        this.lines.push(new LineObstacle(130, 80, 40, 80));
 
 
         this.rectangles.push(new Phaser.Geom.Rectangle(80, 49, 77, 66));
@@ -67,13 +79,28 @@ export default class RecentTest extends Phaser.Scene
             polarCoords
         } = this;
 
-        prevPos.setFromObject(player);
-
         //get input
         uiMan.determineInput();
-    
-        //calculate new position
-        if (currentlyPressed.z === 0) return
+
+        // if (currentlyPressed.z === 0) return
+        if (uiMan.forbiddenMov())
+        {
+
+            // console.log("Forbidden!");
+
+            return false;
+        }
+        // else
+        // {
+        //     console.log("Allowed");
+        // }
+
+
+
+        prevPos.setFromObject(player);
+
+        this.currentVelocity = playerVelocity * delta;
+        
         
         // console.log(predefAngles.get(currentlyPressed.z))
         //update candidate coords
@@ -84,22 +111,15 @@ export default class RecentTest extends Phaser.Scene
         //         .scale(playerVelocity * delta)
         // );
 
+        
+        //calculate angle and new position:
         let angle = predefAngles.get(currentlyPressed.z);
 
-        // const vel = playerVelocity * delta;
+        this.calcCandidatePosition(angle);
 
-        // polarCoords.setToPolar(angle, vel);
 
-        // candidatePos.copy(polarCoords).add(player);
-        // this.calcCandidatePosition()
-        
-        // player.copyPosition(candidatePos);
-
+        //show something...
         this.debugAll(angle);
-
-        
-        // calc pos
-        this.calcCandidatePosition(angle, delta)
         
         //disabled for now...
         // this.checkRects();
@@ -109,11 +129,6 @@ export default class RecentTest extends Phaser.Scene
 
         player.copyPosition(candidatePos);
 
-        
-        // this.graphics.fillPoint(gag.x, gag.y)
-        // console.log(candidatePos);
-
-        // player.copyPosition(candidatePos);
     }
 
     checkRects(rects = this.rectangles, candidatePos = this.candidatePos, prevPos = this.prevPos)
@@ -154,15 +169,15 @@ export default class RecentTest extends Phaser.Scene
         }
     }
 
-    calcCandidatePosition(angle, delta, velocity = this.playerVelocity, tempVec = this.polarCoords, toVec = this.candidatePos, fromVec = this.player)
+    calcCandidatePosition(angle, polarCoords = this.polarCoords, candidatePos = this.candidatePos, prevPos = this.prevPos)
     {
-        const vel = velocity * delta;
+        //const vel = velocity * delta;
 
-        tempVec.setToPolar(angle, vel);
+        polarCoords.setToPolar(angle, this.currentVelocity);
 
-        toVec.copy(tempVec).add(fromVec);
+        candidatePos.copy(polarCoords).add(prevPos);
 
-        return toVec;
+        return candidatePos;
     }
 
     debugMov(angle, clear = true, prevPos = this.prevPos, debugVec = this.debugVec, graphics = this.graphics)
@@ -187,7 +202,33 @@ export default class RecentTest extends Phaser.Scene
         for (const lineObs of lines)
         {
             graphics.strokeLineShape(lineObs.line);
+            this.debugNormalXY(lineObs.line);
         }
+    }
+
+    debugNormalXY(line, graphics = this.graphics)
+    {
+        // graphics.strokeLineShape(line);
+
+        const normalX = Phaser.Geom.Line.NormalX(line);
+        const normalY = Phaser.Geom.Line.NormalY(line);
+
+        // if (Math.random > 0.5)
+        // {
+            // console.log("Wrapped Normal Angle");
+            // console.log(normalX , Phaser.Math.Angle.Wrap(normalX));
+            // console.log(normalY , Phaser.Math.Angle.Wrap(normalY));
+        // }
+
+        const mp = Phaser.Geom.Line.GetMidPoint(line);
+
+        const len = 11;
+
+        // graphics.lineStyle(2, 0xaa0000);
+        graphics.lineBetween(mp.x, mp.y, mp.x + normalX * len, mp.y + normalY * len);
+
+        // graphics.lineStyle(2, 0x00aa00);
+        // graphics.lineBetween(400, 300, 400, 300 + normalY * 100);
     }
 
     debugAll(angle)
@@ -204,6 +245,11 @@ export default class RecentTest extends Phaser.Scene
     isLeft( line, point )
     {
         return line.y1 > line.y2 === ((line.x2 - line.x1) * (point.y - line.y1) - (point.x - line.x1) * (line.y2 - line.y1)) < 0;
+    }
+
+    determinant(line, point)
+    {
+        return ((line.x2 - line.x1) * (point.y - line.y1) - (point.x - line.x1) * (line.y2 - line.y1)) < 0;
     }
 
     checkLines(delta, lines = this.lines, candidatePos = this.candidatePos, prevPos = this.prevPos, movLine = this.movLine)
@@ -225,32 +271,96 @@ export default class RecentTest extends Phaser.Scene
 
             if (Phaser.Geom.Intersects.LineToLine(movLine, obs.line, obs.intersection))
             {
-                if (obs.isHorizontal)
-                {
-                    return candidatePos.y = prevPos.y;
-                }
+                // console.log("INtersec", obs.intersection, obs.intersection.angle());
+                // if (obs.isHorizontal)
+                // {
+                //     /*return */candidatePos.y = prevPos.y;
+                // }
 
-                else if (obs.isVertical)
-                {
-                    return candidatePos.x = prevPos.x;
-                }
+                // else if (obs.isVertical)
+                // {
+                //     /*return */candidatePos.x = prevPos.x;
+                // }
 
-                else
-                {
-                    return this.manageDiagonalObstacle(delta, obs, movLine, prevPos, candidatePos);
-                }
+                // else
+                // {
+                    console.log("Step Length:", Phaser.Geom.Line.Length(movLine));
+
+                    //penetration:
+                    movLine.x1 = obs.intersection.x;
+                    movLine.y1 = obs.intersection.y;
+                    console.log("Penetration Length:", Phaser.Geom.Line.Length(movLine));
+
+                    console.log("Player is Left:", this.isLeft(obs.line, prevPos));
+
+                    console.log("Player Line determinant:", this.determinant(obs.line, prevPos));
+
+
+                   /* return */this.manageDiagonalObstacle(obs, movLine, prevPos, candidatePos);
+                // }
             }
 
         }
     }
 
-    manageDiagonalObstacle(delta, obs, movLine, prevPos, candidatePos)
+    manageDiagonalObstacle(obs, movLine, prevPos, candidatePos)
     {
-        console.log("Player is on left?", obs.pointIsOnLeft(prevPos), obs.isSlash);
-        if (!obs.isSlash)
-        {
-            candidatePos.setToPolar(obs.angle, this.playerVelocity * delta).add(prevPos);
-        }
+        const {polarCoords, project, tempVec} = this;
+        // const inputDir = predefAngles.get(this.currentlyPressed.z);
+        tempVec.copy(UIDefaultCoords.get(this.currentlyPressed.z)); //new Phaser.Math.Vector2(1,0).setAngle(inputDir);
+
+        console.log(tempVec, `tempVec: x: ${tempVec.x}, y: ${tempVec.y}`);
+
+
+        candidatePos.setToPolar(obs.angle, this.currentVelocity);//  .5)//this.playerVelocity * delta);
+        // candidatePos.negate();
+
+        console.log(`candidatePos: x: ${candidatePos.x}, y: ${candidatePos.y}`);
+
+        // console.log(`dirVect: x: ${dirVect.x}, y: ${dirVect.y}`);
+
+        // console.log(`Angles... ${obs.angle} inputAngle ${inputDir}`);
+
+        // player pos relative to intersection point
+        // const {x: obX, y: obY} = obs.intersection;
+        // console.log(`Player is up or down?\nobsX: ${obX === prevPos.x} obsY: ${obY === prevPos.y}\nplayerX: ${prevPos.x}, playerY: ${prevPos.y}`)
+        candidatePos.add(prevPos);
+
+
+        
+        // // console.log("Altrim Davvero INtersec", obs.intersection, obs, obs.intersection.angle(), predefAngles.get(this.currentlyPressed.z))
+        // // console.log("Phaser.Geom.Line.NormalAngle(obs.line)", Phaser.Geom.Line.NormalAngle(obs.line));
+        // // const tentAngle = this.isLeft(obs.line, candidatePos)? Phaser.Math.Angle.Reverse(obs.angle) : obs.angle; // predefAngles.get(this.currentlyPressed.z) - Phaser.Geom.Line.Angle(obs.line);
+        // const {angle: obsAngle, normalX, normalY} = obs;
+
+        // tempVec.setTo(normalX, normalY).subtract(dirVect)
+
+        // console.log(normalX, normalY, dirVect.x, dirVect.y);
+        // console.log(tempVec.x, tempVec.y);
+        // candidatePos.copy(tempVec); //.add(prevPos);
+        // candidatePos.x = Clamp(candidatePos.x, -1, 1);
+        // candidatePos.y = Clamp(candidatePos.y, -1, 1);
+        // candidatePos.add(prevPos);
+        // polarCoords.setToPolar(obsAngle, this.playerVelocity * delta).add(prevPos);
+        // project(polarCoords, candidatePos);
+        // console.log("tentAngle", tentAngle, Phaser.Math.Angle.Wrap(tentAngle));
+        // polarCoords.setToPolar(tentAngle);
+        // console.dir(`PolarCoods x: ${polarCoords.x}, y: ${polarCoords.y}`);
+        // candidatePos.setToPolar(Phaser.Math.Angle.Wrap(tentAngle), this.playerVelocity * delta).add(prevPos)
+
+        // first try:
+        // console.log("Player is on left?", obs.pointIsOnLeft(prevPos), obs.isSlash);
+        // if (!obs.isSlash)
+        // {
+        //     candidatePos.setToPolar(obs.angle, this.playerVelocity * delta).add(prevPos);
+        // }
+    }
+
+    project(vec, src)
+    {
+        const scalar = vec.dot(src) / src.dot(src);
+
+        return vec.copy(src).scale(scalar);
     }
 
 
