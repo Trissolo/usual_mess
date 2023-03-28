@@ -58,9 +58,17 @@ export default class RecentTestMini extends Phaser.Scene
         //test polygon coords:
         // [40, 80, 60, 30, 110, 30, 130, 80]
 
+        // slash
         this.lines.push(new LineObstacle(40, 80, 60, 30));
 
+        // backslash
         this.lines.push(new LineObstacle(110, 30, 130, 80));
+
+        // horizontal line up
+        this.lines.push(new LineObstacle(60, 30, 110, 30));
+
+        // horizontal line down
+        this.lines.push(new LineObstacle(130, 80, 40, 80));        
 
 
 
@@ -115,10 +123,19 @@ export default class RecentTestMini extends Phaser.Scene
         // this.checkRects();
 
         //lines!
+        this.resetLines();
         this.checkLines(delta);
 
         player.copyPosition(candidatePos);
 
+    }
+
+    resetLines()
+    {
+        for (const obs of this.lines)
+        {
+            obs.currentlyChecked = false;
+        }
     }
 
     checkRects(rects = this.rectangles, candidatePos = this.candidatePos, prevPos = this.prevPos)
@@ -257,14 +274,18 @@ export default class RecentTestMini extends Phaser.Scene
 
         for (const obs of lines)
         {
+            if(obs.currentlyChecked) continue;
 
             if (Phaser.Geom.Intersects.LineToLine(movLine, obs.line, obs.intersection))
             {
+                obs.currentlyChecked = true;
+
                 // console.log("INtersec", obs.intersection, obs.intersection.angle());
-                // if (obs.isHorizontal)
-                // {
-                //     /*return */candidatePos.y = prevPos.y;
-                // }
+                if (obs.isHorizontal)
+                {
+                    return this.manageHorizontalLine(obs, movLine, prevPos, candidatePos);
+                    // /*return */candidatePos.y = prevPos.y;
+                }
 
                 // else if (obs.isVertical)
                 // {
@@ -286,10 +307,36 @@ export default class RecentTestMini extends Phaser.Scene
                     // console.log("Player Line determinant:", this.determinant(obs.line, prevPos));
 
 
-                   this.manageDiagonalObstacle(obs, movLine, prevPos, candidatePos);
+                  return  this.manageDiagonalObstacle(obs, movLine, prevPos, candidatePos);
                 // }
             }
 
+        }
+    }
+
+    manageHorizontalLine(obs, movLine, prevPos, candidatePos)
+    {
+        // console.log(obs.normalX, obs.normalY);
+        // facing down, that is blocked down: the line.y1 value is forbidden and the player must stay below
+        if (obs.normalY === 1)
+        {
+            // console.log("POS:", candidatePos.y);
+            // console.log("Line Y", obs.line.y1);
+
+            if (candidatePos.y <= obs.line.y1)
+            {
+                // console.log("Facing down", obs.normalY);
+                candidatePos.y = obs.line.y1 + 0.5;
+            }
+        }
+
+        else // if (obs.normalY === -1)
+        {
+            if (candidatePos.y >= obs.line.y1)
+            {
+                // console.log("Facing up", obs.normalY);
+                candidatePos.y = obs.line.y1 - 0.5;
+            } 
         }
     }
 
