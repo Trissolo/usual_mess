@@ -1,5 +1,11 @@
 console.clear();
 
+const checkEvents = {
+    CHANGED: Symbol(),
+    DONE: Symbol(),
+    START: Symbol()
+};
+
 import UIDefaultCoords from "../userinput/UIDefaultCoords.mjs";
 import UIhelper from "../userinput/UIManager.mjs";
 
@@ -20,7 +26,9 @@ export default class RecentTestMini extends Phaser.Scene
       
     create()
     {
-        
+        console.log("this.events", this.events);
+
+        this.calls = 0;
         this.uiMan = new UIhelper(this);
 
         // player stuff as Scene props
@@ -46,6 +54,14 @@ export default class RecentTestMini extends Phaser.Scene
 
         this.lines = [];
 
+        this.events.on(checkEvents.DONE, this.updatePlayerPosition, this);
+
+        this.events.on(checkEvents.CHANGED, this.checkLines, this);
+
+        this.events.once(checkEvents.START, this.checkObsLines, this);
+
+
+
         //test obs:
         //hor line
         // this.lines.push(new LineObstacle(30,60, 80, 60));
@@ -68,7 +84,9 @@ export default class RecentTestMini extends Phaser.Scene
         this.lines.push(new LineObstacle(60, 30, 110, 30));
 
         // horizontal line down
-        this.lines.push(new LineObstacle(130, 80, 40, 80));        
+        this.lines.push(new LineObstacle(130, 80, 40, 80));
+
+        this.lines.forEach(el => Phaser.Geom.Line.Extend(el.line, 5.9));
 
 
 
@@ -80,6 +98,18 @@ export default class RecentTestMini extends Phaser.Scene
         this.debugVec = new Phaser.Math.Vector2();
 
         this.debugInfo = this.add.text(2, 2, "0123456789", {fontSize: 12});
+    }
+
+    updatePlayerPosition()
+    {
+        this.player.copyPosition(this.candidatePos);
+        this.events.once(checkEvents.START, this.checkObsLines, this);
+    }
+
+    checkObsLines()
+    {
+        console.log("Starting...");
+        this.checkLines();
     }
 
     update(time, delta)
@@ -123,10 +153,11 @@ export default class RecentTestMini extends Phaser.Scene
         // this.checkRects();
 
         //lines!
-        this.resetLines();
-        this.checkLines(delta);
+        // this.resetLines();
+        // this.checkLines();
+        this.events.emit(checkEvents.START);
 
-        player.copyPosition(candidatePos);
+        // player.copyPosition(candidatePos);
 
     }
 
@@ -258,10 +289,10 @@ export default class RecentTestMini extends Phaser.Scene
         return ((line.x2 - line.x1) * (point.y - line.y1) - (point.x - line.x1) * (line.y2 - line.y1)) < 0;
     }
 
-    checkLines(delta, lines = this.lines, candidatePos = this.candidatePos, prevPos = this.prevPos, movLine = this.movLine)
+    checkLines(lines = this.lines, candidatePos = this.candidatePos, prevPos = this.prevPos, movLine = this.movLine)
     {
         // set potential movement
-        movLine.setTo(prevPos.x, prevPos.y, candidatePos.x, candidatePos.y);
+        // movLine.setTo(prevPos.x, prevPos.y, candidatePos.x, candidatePos.y);
 
         // const intersecting = []
         // for (const obs of lines)
@@ -271,19 +302,27 @@ export default class RecentTestMini extends Phaser.Scene
         //         intersecting.push(obs);
         //     }
         // }
+        
+        let changed = false;
 
         for (const obs of lines)
         {
-            if(obs.currentlyChecked) continue;
+        movLine.setTo(prevPos.x, prevPos.y, candidatePos.x, candidatePos.y);
+
+            // if(obs.currentlyChecked) continue;
 
             if (Phaser.Geom.Intersects.LineToLine(movLine, obs.line, obs.intersection))
             {
-                obs.currentlyChecked = true;
+                // obs.currentlyChecked = true;
 
                 // console.log("INtersec", obs.intersection, obs.intersection.angle());
                 if (obs.isHorizontal)
                 {
-                    return this.manageHorizontalLine(obs, movLine, prevPos, candidatePos);
+                    this.manageHorizontalLine(obs, movLine, prevPos, candidatePos);
+                    //return this.events.emit(checkEvents.CHANGED);
+                    changed = true;
+                    console.log("Break Hor");
+                    break;
                     // /*return */candidatePos.y = prevPos.y;
                 }
 
@@ -306,12 +345,33 @@ export default class RecentTestMini extends Phaser.Scene
 
                     // console.log("Player Line determinant:", this.determinant(obs.line, prevPos));
 
+                    // console.dir("Ch diagonal BEFORE", this.candidatePos)
 
-                  return  this.manageDiagonalObstacle(obs, movLine, prevPos, candidatePos);
+                    this.manageDiagonalObstacle(obs, movLine, prevPos, candidatePos);
+                    //return this.events.emit(checkEvents.CHANGED);
+                    changed = true;
+                    // console.dir("Ch diag", this.candidatePos)
+                    console.log("Break Diag");
+                    break;
                 // }
             }
 
         }
+
+        // console.log("CHANGED", changed)
+        if (changed)
+        {
+            // console.log("TRUE CH", ++this.calls);
+            ++this.calls;
+            this.events.emit(checkEvents.CHANGED);
+        }
+        else
+        {
+            console.log("FALSE UPD", this.calls = 0);
+            this.calls = 0;
+            this.events.emit(checkEvents.DONE);
+        }
+        // return changed? this.events.emit(checkEvents.CHANGED): this.events.emit(checkEvents.DONE);
     }
 
     manageHorizontalLine(obs, movLine, prevPos, candidatePos)
@@ -325,8 +385,9 @@ export default class RecentTestMini extends Phaser.Scene
 
             if (candidatePos.y <= obs.line.y1)
             {
-                // console.log("Facing down", obs.normalY);
-                candidatePos.y = obs.line.y1 + 0.5;
+                // console.log("Facing down", obs.normalY, candidatePos.y);
+                // candidatePos.y = obs.line.y1 + 0.5;
+                candidatePos.y = Math.min(prevPos.y, obs.line.y1 + 0.5); //this.playerVelocity);
             }
         }
 
@@ -335,9 +396,12 @@ export default class RecentTestMini extends Phaser.Scene
             if (candidatePos.y >= obs.line.y1)
             {
                 // console.log("Facing up", obs.normalY);
-                candidatePos.y = obs.line.y1 - 0.5;
+                // candidatePos.y = obs.line.y1 - 0.5;
+                candidatePos.y = Math.max(prevPos.y, obs.line.y1 - 0.5); //this.playerVelocity);
             } 
         }
+        
+        console.log(`candidate y: ${candidatePos.y}\nPrevY: ${prevPos.y}, cand > prev: ${candidatePos.y > prevPos.y}`)
     }
 
     manageDiagonalObstacle(obs, movLine, prevPos, candidatePos)
@@ -345,27 +409,40 @@ export default class RecentTestMini extends Phaser.Scene
         const {tempVec, uiMan} = this;
         // const {polarCoords, project, tempVec} = this;
 
-        tempVec.copy(UIDefaultCoords.get(this.currentlyPressed.z)); //new Phaser.Math.Vector2(1,0).setAngle(inputDir);
+        // tempVec.copy(UIDefaultCoords.get(this.currentlyPressed.z)); //new Phaser.Math.Vector2(1,0).setAngle(inputDir);
 
+        tempVec.copy(candidatePos);
         candidatePos.setToPolar(obs.angle, this.currentVelocity);
         // candidatePos.negate();
-        
-        if (obs.isSlash)
+        // console.log("Diag normal", obs.normalX, obs.normalY)
+        if (obs.isSlash )
         {
-            if (this.isLeft(obs.line, prevPos))
+            if (this.isLeft(obs.line, prevPos) && obs.normalX < 0)
             {
                 if(uiMan.downPressed())
                 {
                     candidatePos.negate();
                 }
+
+                // else if(uiMan.leftPressed())
+                // {
+                //     //candidatePos.setTo(predefAngles.RIGHT);
+                //     // candidatePos.x += this.playerVelocity;
+                //     candidatePos.copy(tempVec);//setToPolar(-1.5707963267948966, this.currentVelocity);
+                //     //candidatePos.copy(tempVec).add(prevPos);
+                // }
             }
 
-            else
+            else if ((!this.isLeft(obs.line, prevPos) && obs.normalX > 0))
             {
                 if (uiMan.leftPressed())
                 {
                     candidatePos.negate();
                 }
+            }
+            else
+            {
+                candidatePos.setToPolar(-3.141592653589793, this.currentVelocity);
             }
         }
 
@@ -375,7 +452,9 @@ export default class RecentTestMini extends Phaser.Scene
             {
                 if (uiMan.upPressed())
                 {
-                    candidatePos.negate();
+                    //candidatePos.negate();
+                candidatePos.setToPolar(0, this.currentVelocity);
+
                 }
             }
 
@@ -394,8 +473,8 @@ export default class RecentTestMini extends Phaser.Scene
         // console.log(`Add: x: ${tempadd.x}, y: ${tempadd.y}`);
         // console.log(`Subtract: x: ${tempsub.x}, y: ${tempsub.y}`);
 
-
         candidatePos.add(prevPos);
+        console.log("UPdating candidatePos after Diag intersection", candidatePos);
 
         // candidatePos.setToPolar(Phaser.Math.Angle.Wrap(tentAngle), this.playerVelocity * delta).add(prevPos)
 

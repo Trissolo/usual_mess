@@ -3,6 +3,7 @@ import TestScene from "./scenes/TestScene.mjs";
 
 // import RecentTest from "./scenes/RecentTest.mjs";
 import RecentTestMini from "./scenes/RecentTestMini.mjs";
+import RecentTestDC from "./scenes/RecentTestDc.mjs";
 
 const config = {
   // type: Phaser.WEBGL,
@@ -22,7 +23,7 @@ const config = {
   //  baseURL: 'https://i.ibb.co/YhGPn4S',
   //  crossOrigin: 'anonymous'
   //},
-  scene: RecentTestMini  //[TestScene]
+  scene: RecentTestDC //RecentTestMini  //[TestScene]
 };
 
 window.game = new Phaser.Game(config);
